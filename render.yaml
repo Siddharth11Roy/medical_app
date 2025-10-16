@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: report-rx-analyzer
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT app:app
+    envVars:
+      # This is the key that installs system dependencies before the build process
+      - key: APT_PACKAGES
+        value: poppler-utils
+      - key: GEMINI_API_KEY
+        value: # Set this in the Render dashboard, but declare it here
