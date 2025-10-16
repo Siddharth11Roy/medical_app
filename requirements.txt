@@ -1,0 +1,6 @@
+Flask
+google-genai # The new official Google GenAI SDK
+pdf2image
+Pillow
+python-dotenv
+gunicorn

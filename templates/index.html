@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Rx Analyzer - Flask</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a4d3c 0%, #1a7a5e 50%, #2d9b7f 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
+
+        /* Mist effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(ellipse at 20% 30%, rgba(255,255,255,0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(255,255,255,0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.05) 0%, transparent 70%);
+            pointer-events: none;
+            animation: mistFloat 15s ease-in-out infinite;
+        }
+
+        @keyframes mistFloat {
+            0%, 100% { opacity: 0.6; transform: translateY(0); }
+            50% { opacity: 1; transform: translateY(-20px); }
+        }
+
+        .container { 
+            max-width: 1200px; 
+            margin: auto; 
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 40px; 
+            border-radius: 20px; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 { 
+            color: #0a4d3c;
+            text-align: center; 
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .upload-section { 
+            background: linear-gradient(135deg, #e8f5f1 0%, #d4f1e8 100%);
+            padding: 30px; 
+            border-radius: 15px; 
+            margin-bottom: 40px; 
+            text-align: center;
+            border: 2px solid #2d9b7f;
+            box-shadow: 0 4px 15px rgba(45, 155, 127, 0.2);
+        }
+
+        .upload-section h2 {
+            color: #0a4d3c;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        input[type="file"] { 
+            margin: 15px 0;
+            padding: 10px;
+            border: 2px dashed #2d9b7f;
+            border-radius: 8px;
+            background: white;
+            width: 100%;
+            max-width: 400px;
+            cursor: pointer;
+        }
+
+        button { 
+            background: linear-gradient(135deg, #1a7a5e 0%, #2d9b7f 100%);
+            color: white; 
+            padding: 12px 30px; 
+            border: none; 
+            border-radius: 25px; 
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(45, 155, 127, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        button:hover { 
+            background: linear-gradient(135deg, #2d9b7f 0%, #3db896 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(45, 155, 127, 0.6);
+        }
+
+        .error { 
+            color: #dc3545;
+            text-align: center; 
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(220, 53, 69, 0.1);
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        /* Tabs Styling */
+        .tab-controls { 
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 30px;
+            margin-bottom: 0;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #2d9b7f;
+        }
+
+        .tab-button { 
+            padding: 12px 20px; 
+            cursor: pointer; 
+            border: 2px solid transparent;
+            background: linear-gradient(135deg, #e8f5f1 0%, #d4f1e8 100%);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            color: #0a4d3c;
+            flex: 1;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .tab-button:hover {
+            background: linear-gradient(135deg, #d4f1e8 0%, #c0ede0 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(45, 155, 127, 0.3);
+        }
+
+        .tab-button.active { 
+            background: linear-gradient(135deg, #1a7a5e 0%, #2d9b7f 100%);
+            color: white;
+            border-color: #2d9b7f;
+            box-shadow: 0 4px 15px rgba(45, 155, 127, 0.4);
+        }
+
+        .tab-content { 
+            padding: 30px;
+            background: #fafffe;
+            border: 2px solid #e8f5f1;
+            border-top: none;
+            border-radius: 0 0 15px 15px;
+            min-height: 300px;
+            line-height: 1.8;
+        }
+
+        .tab-content h3 {
+            color: #0a4d3c;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #2d9b7f;
+        }
+
+        .tab-content p {
+            color: #2c3e50;
+            font-size: 1.05em;
+            white-space: pre-wrap;
+            line-height: 1.8;
+        }
+
+        .hidden { 
+            display: none;
+        }
+
+        .results-title {
+            color: #0a4d3c;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2em;
+            font-weight: 700;
+        }
+
+        .image-container {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #fafffe;
+            border-radius: 15px;
+            border: 2px solid #e8f5f1;
+        }
+
+        .image-container p {
+            color: #0a4d3c;
+            font-weight: 600;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .image-container img {
+            max-width: 600px;
+            width: 100%;
+            height: auto;
+            border: 3px solid #2d9b7f;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(45, 155, 127, 0.3);
+        }
+
+        /* Format text content better */
+        .tab-content p strong {
+            color: #1a7a5e;
+            font-weight: 700;
+        }
+
+        .tab-content ul {
+            margin: 15px 0;
+            padding-left: 25px;
+        }
+
+        .tab-content li {
+            margin: 8px 0;
+            color: #2c3e50;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .tab-button {
+                min-width: 100px;
+                padding: 10px 15px;
+                font-size: 0.9em;
+            }
+
+            .image-container img {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 Report Rx Analyzer</h1>
+
+        <div class="upload-section">
+            <form action="{{ url_for('analyze') }}" method="post" enctype="multipart/form-data">
+                <h2>📄 Upload Medical Report (PDF)</h2>
+                <input type="file" name="pdf_file" accept=".pdf" required>
+                <br>
+                <button type="submit">🔍 Analyze Report</button>
+            </form>
+            {% if error %}
+                <p class="error">⚠️ {{ error }}</p>
+            {% endif %}
+        </div>
+
+        {% if results %}
+            <h2 class="results-title">📊 Analysis Results</h2>
+
+            <div class="image-container">
+                <p><strong>📸 Composite Image for Analysis</strong></p>
+                <img src="{{ composite_image_b64 }}" alt="Processed Composite Report Image">
+            </div>
+
+            <div class="tab-controls">
+                <div class="tab-button active" onclick="openTab(event, 'health_summary')">💚 Health Summary</div>
+                <div class="tab-button" onclick="openTab(event, 'glance_parameters')">📈 Parameters</div>
+                <div class="tab-button" onclick="openTab(event, 'potential_risks')">⚠️ Risks</div>
+                <div class="tab-button" onclick="openTab(event, 'diet_recommendations')">🥗 Diet</div>
+                <div class="tab-button" onclick="openTab(event, 'consolidated_guidance')">📋 Guidance</div>
+                <div class="tab-button" onclick="openTab(event, 'final_summary')">✨ Summary</div>
+            </div>
+
+            <div id="health_summary" class="tab-content">
+                <h3>💚 Health Summary</h3>
+                <p>{{ results.health_summary | safe }}</p>
+            </div>
+            <div id="glance_parameters" class="tab-content hidden">
+                <h3>📈 Glance at Important Parameters</h3>
+                <p>{{ results.glance_parameters | safe }}</p>
+            </div>
+            <div id="potential_risks" class="tab-content hidden">
+                <h3>⚠️ Potential Risks</h3>
+                <p>{{ results.potential_risks | safe }}</p>
+            </div>
+            <div id="diet_recommendations" class="tab-content hidden">
+                <h3>🥗 Diet Recommendations</h3>
+                <p>{{ results.diet_recommendations | safe }}</p>
+            </div>
+            <div id="consolidated_guidance" class="tab-content hidden">
+                <h3>📋 Consolidated Guidance</h3>
+                <p>{{ results.consolidated_guidance | safe }}</p>
+            </div>
+            <div id="final_summary" class="tab-content hidden">
+                <h3>✨ Final Summary</h3>
+                <p>{{ results.final_summary | safe }}</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // JavaScript for tab switching
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].classList.add("hidden");
+            }
+            tablinks = document.getElementsByClassName("tab-button");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).classList.remove("hidden");
+            evt.currentTarget.className += " active";
+        }
+        // Open the default tab on load
+        document.addEventListener('DOMContentLoaded', (event) => {
+            if (document.querySelector('.tab-button')) {
+                document.querySelector('.tab-button').click();
+            }
+        });
+    </script>
+</body>
+</html>
